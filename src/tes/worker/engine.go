@@ -39,12 +39,17 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 	}
 
 	for i, dockerTask := range job.Task.Docker {
-		stdout, err := mapper.TempFile(job.JobId)
+		script, err := mapper.TaskFile(job.JobId, "script")
+		if err != nil {
+			return fmt.Errorf("Error setting up job script log: %s", err)
+			return err
+		}
+		stdout, err := mapper.TaskFile(job.JobId, "stdout")
 		if err != nil {
 			return fmt.Errorf("Error setting up job stdout log: %s", err)
 			return err
 		}
-		stderr, err := mapper.TempFile(job.JobId)
+		stderr, err := mapper.TaskFile(job.JobId, "stderr")
 		if err != nil {
 			return fmt.Errorf("Error setting up job stderr log: %s", err)
 			return err
@@ -57,7 +62,9 @@ func RunJob(job *ga4gh_task_exec.Job, mapper FileMapper) error {
 		binds := mapper.GetBindings(job.JobId)
 
 		dclient := NewDockerEngine()
-		exit_code, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, stdout, stderr)
+		// Run writes to and closes teh script file handle
+		exit_code, err := dclient.Run(dockerTask.ImageName, dockerTask.Cmd, binds, dockerTask.Workdir, true, job.JobId, script, stdout, stderr)
+
 		stdout.Close()
 		stderr.Close()
 
