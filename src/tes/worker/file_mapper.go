@@ -58,6 +58,10 @@ func (self *FileMapper) Job(jobId string) {
 }
 
 func (self *FileMapper) AddVolume(jobId string, source string, mount string) {
+	// tmpPath := path.Join(self.VolumeDir, fmt.Sprintf("job_%s", jobId))
+	// if _, err := os.Stat(tmpPath); err != nil {
+	// 	os.Mkdir(tmpPath, 0700)
+	// }
 	tmpPath, _ := ioutil.TempDir(self.VolumeDir, fmt.Sprintf("job_%s", jobId))
 	b := FSBinding{
 		HostPath:      tmpPath,
@@ -129,8 +133,13 @@ func (self *FileMapper) UpdateOutputs(jobId string, jobNum int, exitCode int, st
 	(*self.client).UpdateJobStatus(context.Background(), &a)
 }
 
-func (self *FileMapper) TempFile(jobId string) (f *os.File, err error) {
-	out, err := ioutil.TempFile(self.jobs[jobId].WorkDir, "ga4ghtask_")
+func (self *FileMapper) TempFile(jobId string, name string) (f *os.File, err error) {
+	out, err := ioutil.TempFile(self.jobs[jobId].WorkDir, fmt.Sprintf("tesTask_%s_", name))
+	return out, err
+}
+
+func (self *FileMapper) TaskFile(jobId string, name string) (f *os.File, err error) {
+	out, err := os.Create(path.Join(self.VolumeDir, jobId, fmt.Sprintf("%s", name)))
 	return out, err
 }
 
